@@ -82,9 +82,9 @@ pipeline {
                 script {
                     def scannerHome = tool env.SONAR_SCANNER_TOOL
                     // withSonarQubeEnv supplies the token; -Dsonar.host.url overrides the server URL.
-                    withSonarQubeEnv(env.SONAR_SERVER) {
-                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.host.url=${env.SONAR_URL}"
-                    }
+withSonarQubeEnv('TaskFlow-Sonar') {
+    sh "${scannerHome}/bin/sonar-scanner"
+}
                 }
             }
         }
