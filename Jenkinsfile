@@ -26,6 +26,9 @@ pipeline {
         // Must match the names configured in Manage Jenkins.
         SONAR_SERVER       = 'SonarQube'      // Manage Jenkins > System > SonarQube servers
         SONAR_SCANNER_TOOL = 'SonarScanner'   // Manage Jenkins > Tools > SonarQube Scanner
+        // Address of SonarQube as seen FROM the Jenkins container (same Docker network).
+        // Passed to the scanner explicitly, so a wrong URL in the Jenkins server entry cannot break it.
+        SONAR_URL          = 'http://sonarqube:9000'
         ARTIFACT_NAME      = "taskflow-${env.BUILD_NUMBER}.tar.gz"
     }
 
@@ -64,10 +67,23 @@ pipeline {
         stage('SonarQube Analysis') {
             when { branch 'main' }
             steps {
+                // Fail fast with a clear message if SonarQube cannot be reached.
+                sh '''
+                    echo "Checking SonarQube at $SONAR_URL ..."
+                    if ! curl -fsS "$SONAR_URL/api/system/status"; then
+                        echo ""
+                        echo "ERROR: cannot reach SonarQube at $SONAR_URL from the Jenkins container."
+                        echo "Fix: put both containers on one Docker network (docker network connect <net> jenkins),"
+                        echo "     and make sure the SonarQube container is named 'sonarqube' and is UP."
+                        exit 1
+                    fi
+                    echo ""
+                '''
                 script {
                     def scannerHome = tool env.SONAR_SCANNER_TOOL
+                    // withSonarQubeEnv supplies the token; -Dsonar.host.url overrides the server URL.
                     withSonarQubeEnv(env.SONAR_SERVER) {
-                        sh "${scannerHome}/bin/sonar-scanner"
+                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.host.url=${env.SONAR_URL}"
                     }
                 }
             }

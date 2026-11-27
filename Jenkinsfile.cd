@@ -44,6 +44,19 @@ pipeline {
             }
         }
 
+        stage('Preflight') {
+            steps {
+                sh '''
+                    if ! command -v docker >/dev/null 2>&1; then
+                        echo "ERROR: the Docker CLI is not available inside the Jenkins container."
+                        echo "Jenkins needs the docker CLI and /var/run/docker.sock mounted to deploy."
+                        exit 1
+                    fi
+                    docker version --format 'Docker server version: {{.Server.Version}}'
+                '''
+            }
+        }
+
         stage('Approve PROD') {
             when { expression { params.ENVIRONMENT == 'PROD' } }
             steps {
