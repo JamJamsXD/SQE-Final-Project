@@ -1,129 +1,156 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { render, screen, cleanup } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import App from './App'
 
-import {
-  describe,
-  it,
-  expect,
-  beforeEach,
-  afterEach
-} from 'vitest';
+const INPUT_PLACEHOLDER = 'What needs to be done?'
 
-import {
-  render,
-  screen,
-  cleanup
-} from '@testing-library/react';
+// Reads the number shown on a statistics card such as "Total Tasks".
+function getStat(label) {
+  const card = Array.from(document.querySelectorAll('.stat-card')).find(
+    (el) => el.querySelector('span').textContent === label
+  )
+  return card.querySelector('h2').textContent
+}
 
-import userEvent from '@testing-library/user-event';
-import App from './App';
+async function addTask(user, title) {
+  await user.type(screen.getByPlaceholderText(INPUT_PLACEHOLDER), title)
+  await user.click(screen.getByRole('button', { name: 'Add Task' }))
+}
 
 afterEach(() => {
-  cleanup();
-});
+  cleanup()
+})
 
 describe('TaskFlow Application', () => {
-
   beforeEach(() => {
-    render(<App />);
-  });
+    render(<App />)
+  })
 
-  // TEST 1: Valid input
-  it('should successfully add a new task', async () => {
-    const user = userEvent.setup();
+  describe('adding tasks', () => {
+    // Valid input
+    it('adds a valid task, clears the input and updates the total', async () => {
+      const user = userEvent.setup()
 
-    const input = screen.getByPlaceholderText(
-      'What needs to be done?'
-    );
+      await addTask(user, 'Study React testing')
 
-    await user.type(input, 'Study React testing');
+      expect(screen.getByText('Study React testing')).toBeInTheDocument()
+      expect(screen.getByPlaceholderText(INPUT_PLACEHOLDER)).toHaveValue('')
+      expect(getStat('Total Tasks')).toBe('4')
+      expect(getStat('Pending')).toBe('3')
+    })
 
-    await user.click(
-      screen.getByRole('button', { name: 'Add Task' })
-    );
+    // Boundary: surrounding spaces are trimmed
+    it('trims whitespace around a new task title', async () => {
+      const user = userEvent.setup()
 
-    expect(
-      screen.getByText('Study React testing')
-    ).toBeInTheDocument();
+      await addTask(user, '   Write report   ')
 
-    expect(input).toHaveValue('');
-  });
+      expect(screen.getByRole('checkbox', { name: 'Write report' })).toBeInTheDocument()
+    })
 
-  // TEST 2: Alternative outcome
-  it('should mark a task as completed', async () => {
-    const user = userEvent.setup();
+    // Invalid input: empty
+    it('does not add an empty task', async () => {
+      const user = userEvent.setup()
 
-    const checkbox = screen.getByRole('checkbox', {
-      name: 'Complete SQE Final Project'
-    });
+      await user.click(screen.getByRole('button', { name: 'Add Task' }))
 
-    await user.click(checkbox);
+      expect(screen.getAllByRole('checkbox')).toHaveLength(3)
+      expect(getStat('Total Tasks')).toBe('3')
+    })
 
-    expect(checkbox).toBeChecked();
-  });
+    // Invalid input: whitespace only
+    it('does not add a task made only of spaces', async () => {
+      const user = userEvent.setup()
 
-  // TEST 3: Invalid input
-  it('should not add an empty task', async () => {
-    const user = userEvent.setup();
+      await addTask(user, '     ')
 
-    await user.click(
-      screen.getByRole('button', { name: 'Add Task' })
-    );
+      expect(screen.getAllByRole('checkbox')).toHaveLength(3)
+    })
+  })
 
-    expect(
-      screen.getByText('Complete SQE Final Project')
-    ).toBeInTheDocument();
+  describe('completing and deleting tasks', () => {
+    // Alternative outcome: pending -> completed
+    it('marks a pending task as completed and updates the statistics', async () => {
+      const user = userEvent.setup()
+      const checkbox = screen.getByRole('checkbox', { name: 'Complete SQE Final Project' })
 
-    expect(screen.getAllByRole('checkbox')).toHaveLength(3);
-  });
+      await user.click(checkbox)
 
-  // TEST 4: Delete functionality
-  it('should delete an existing task', async () => {
-    const user = userEvent.setup();
+      expect(checkbox).toBeChecked()
+      expect(getStat('Completed')).toBe('2')
+      expect(getStat('Pending')).toBe('1')
+    })
 
-    const deleteButtons = screen.getAllByRole(
-      'button',
-      { name: 'Delete' }
-    );
+    // Alternative outcome: completed -> pending
+    it('marks a completed task as pending again', async () => {
+      const user = userEvent.setup()
+      const checkbox = screen.getByRole('checkbox', { name: 'Review React fundamentals' })
 
-    await user.click(deleteButtons[0]);
+      expect(checkbox).toBeChecked()
+      await user.click(checkbox)
 
-    expect(
-      screen.queryByText('Complete SQE Final Project')
-    ).not.toBeInTheDocument();
-  });
+      expect(checkbox).not.toBeChecked()
+      expect(getStat('Completed')).toBe('0')
+      expect(getStat('Pending')).toBe('3')
+    })
 
-  // TEST 5: Filtering functionality
-  it('should display only completed tasks when filtered', async () => {
-    const user = userEvent.setup();
+    it('deletes only the selected task', async () => {
+      const user = userEvent.setup()
 
-    await user.click(
-      screen.getByRole('button', { name: 'Completed' })
-    );
+      await user.click(screen.getAllByRole('button', { name: 'Delete' })[0])
 
-    expect(
-      screen.getByText('Review React fundamentals')
-    ).toBeInTheDocument();
+      expect(screen.queryByText('Complete SQE Final Project')).not.toBeInTheDocument()
+      expect(screen.getByText('Review React fundamentals')).toBeInTheDocument()
+      expect(getStat('Total Tasks')).toBe('2')
+    })
+  })
 
-    expect(
-      screen.queryByText('Complete SQE Final Project')
-    ).not.toBeInTheDocument();
-  });
+  describe('filtering tasks', () => {
+    it('shows only completed tasks with the Completed filter', async () => {
+      const user = userEvent.setup()
 
+      await user.click(screen.getByRole('button', { name: 'Completed' }))
 
-  // TEST 6: Statistics
-  it( () => {
-    const totalCard = screen.getByText('Total Tasks')
-      .closest('.stat-card');
+      expect(screen.getByText('Review React fundamentals')).toBeInTheDocument()
+      expect(screen.queryByText('Complete SQE Final Project')).not.toBeInTheDocument()
+    })
 
-    const completedCard = screen.getByText('Completed')
-      .closest('.stat-card');
+    it('shows only pending tasks with the Pending filter', async () => {
+      const user = userEvent.setup()
 
-    const pendingCard = screen.getByText('Pending')
-      .closest('.stat-card');
+      await user.click(screen.getByRole('button', { name: 'Pending' }))
 
-    expect(totalCard).toHaveTextContent('3');
-    expect(completedCard).toHaveTextContent('1');
-    expect(pendingCard).toHaveTextContent('2');
-  });
+      expect(screen.getByText('Complete SQE Final Project')).toBeInTheDocument()
+      expect(screen.getByText('Prepare project documentation')).toBeInTheDocument()
+      expect(screen.queryByText('Review React fundamentals')).not.toBeInTheDocument()
+    })
 
+    it('shows every task again when All is selected', async () => {
+      const user = userEvent.setup()
 
-});
+      await user.click(screen.getByRole('button', { name: 'Completed' }))
+      await user.click(screen.getByRole('button', { name: 'All' }))
+
+      expect(screen.getAllByRole('checkbox')).toHaveLength(3)
+    })
+
+    // Boundary: a filter that matches nothing
+    it('shows the empty-state message when no task matches the filter', async () => {
+      const user = userEvent.setup()
+
+      await user.click(screen.getByRole('button', { name: 'Completed' }))
+      await user.click(screen.getByRole('checkbox', { name: 'Review React fundamentals' }))
+
+      expect(screen.getByText(/No tasks found/)).toBeInTheDocument()
+    })
+  })
+
+  describe('statistics', () => {
+    it('shows the correct initial totals', () => {
+      expect(getStat('Total Tasks')).toBe('3')
+      expect(getStat('Completed')).toBe('1')
+      expect(getStat('Pending')).toBe('2')
+    })
+  })
+})

@@ -1,0 +1,11 @@
+npm audit result for TaskFlow
+Date: 2026-11-27 (UTC)
+Command: npm audit
+
+found 0 vulnerabilities
+
+Command: npm audit --omit=dev
+found 0 vulnerabilities
+
+Finding explanation: no vulnerabilities were reported at the time of this run, so there is nothing to remediate.
+If a finding appears later: run 'npm audit' to see the advisory and affected package, then 'npm audit fix' (or upgrade the parent dependency) and re-run the pipeline.
