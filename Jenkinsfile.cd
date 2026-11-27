@@ -24,7 +24,7 @@ pipeline {
 
     environment {
         // Full name of the CI Multibranch job's main branch: "<multibranch job>/<branch>".
-        CI_MAIN_JOB = 'SQE Final Project CI/main'
+        CI_MAIN_JOB = 'SQE-Final-Project-CI/main'
     }
 
     stages {
