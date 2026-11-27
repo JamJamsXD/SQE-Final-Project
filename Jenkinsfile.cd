@@ -7,7 +7,7 @@ pipeline {
     parameters {
         string(
             name: 'CI_BUILD_NUMBER',
-            defaultValue: '',
+            defaultValue: '1',
             description: 'Build number of the main-branch CI job whose artifact will be deployed'
         )
         choice(
