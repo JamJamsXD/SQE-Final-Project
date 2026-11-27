@@ -3,6 +3,7 @@ import { useState } from 'react';
 import './App.css';
 
 function App() {
+  const unusedVariable = "This variable is never used";
   const [tasks, setTasks] = useState([
     { id: 1, title: 'Complete SQE Final Project', completed: false },
     { id: 2, title: 'Review React fundamentals', completed: true },

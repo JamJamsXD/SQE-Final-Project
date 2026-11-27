@@ -153,8 +153,4 @@ describe('TaskFlow Application', () => {
       expect(getStat('Pending')).toBe('2')
     })
   })
-
-  it('should demonstrate a failing test', () => {
-  expect(true).toBe(false)
-})
 })
