@@ -85,8 +85,6 @@ function App() {
         <section className="stats">
           <div className="stat-card">
             <span>Total Tasks</span>
-              <span>Completion Rate</span>
-              <h2>{getCompletionPercentage()}%</h2>
             <h2>{tasks.length}</h2>
           </div>
 
@@ -98,6 +96,11 @@ function App() {
           <div className="stat-card">
             <span>Pending</span>
             <h2>{tasks.length - completedCount}</h2>
+          </div>
+
+          <div className="stat-card">
+            <span>Completion Rate</span>
+            <h2>{getCompletionPercentage()}%</h2>
           </div>
         </section>
 
