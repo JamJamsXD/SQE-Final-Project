@@ -72,47 +72,34 @@ pipeline {
                 }
             }
             steps {
-                // Fail fast with a clear message if SonarQube cannot be reached.
-                sh '''
-                    echo "Checking SonarQube at $SONAR_URL ..."
-                    if ! curl -fsS "$SONAR_URL/api/system/status"; then
-                        echo ""
-                        echo "ERROR: cannot reach SonarQube at $SONAR_URL from the Jenkins container."
-                        echo "Fix: put both containers on one Docker network (docker network connect <net> jenkins),"
-                        echo "     and make sure the SonarQube container is named 'sonarqube' and is UP."
-                        exit 1
-                    fi
-                    echo ""
-                '''
                 script {
-                    def scannerHome = tool env.SONAR_SCANNER_TOOL
-                    // withSonarQubeEnv supplies the token; -Dsonar.host.url overrides the server URL.
-                    withSonarQubeEnv(env.SONAR_SERVER) {
-                        sh "${scannerHome}/bin/sonar-scanner -Dsonar.host.url=${env.SONAR_URL}"
+                    def scannerHome = tool 'SonarScanner'
+                    withSonarQubeEnv('TaskFlow-Sonar') {
+                        sh "${scannerHome}/bin/sonar-scanner"
                     }
                 }
             }
         }
 
         stage('Quality Gate') {
-        when {
-            anyOf {
-                branch 'main'
-                branch 'demo/sonarqube-failure'
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'demo/sonarqube-failure'
+                }
+            }
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
-        steps {
-            timeout(time: 5, unit: 'MINUTES') {
-                waitForQualityGate abortPipeline: true
-            }
-        }
-
+        
         stage('Build') {
             when {
                 anyOf {
                     branch 'develop'
                     branch 'main'
-                    branch 'demo/sonarqube-failure'
                 }
             }
             steps {
