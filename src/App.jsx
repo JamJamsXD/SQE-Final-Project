@@ -60,6 +60,12 @@ function App() {
     (task) => task.completed
   ).length;
 
+  const getCompletionPercentage = () => {
+  if (tasks.length === 0) return 0;
+
+  return Math.round((completedCount / tasks.length) * 100);
+};
+
   return (
     <div className="app">
       <header className="header">
@@ -79,6 +85,8 @@ function App() {
         <section className="stats">
           <div className="stat-card">
             <span>Total Tasks</span>
+              <span>Completion Rate</span>
+              <h2>{getCompletionPercentage()}%</h2>
             <h2>{tasks.length}</h2>
           </div>
 
