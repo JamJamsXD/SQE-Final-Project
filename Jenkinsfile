@@ -65,7 +65,12 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            when { branch 'main' }
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'demo/sonarqube-failure'
+                }
+            }
             steps {
                 // Fail fast with a clear message if SonarQube cannot be reached.
                 sh '''
@@ -90,13 +95,15 @@ pipeline {
         }
 
         stage('Quality Gate') {
-            when { branch 'main' }
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    // Needs the SonarQube webhook -> http://<jenkins>/sonarqube-webhook/
-                    // A failed gate aborts the pipeline: Build and Archive never run.
-                    waitForQualityGate abortPipeline: true
-                }
+        when {
+            anyOf {
+                branch 'main'
+                branch 'demo/sonarqube-failure'
+            }
+        }
+        steps {
+            timeout(time: 5, unit: 'MINUTES') {
+                waitForQualityGate abortPipeline: true
             }
         }
 
@@ -105,6 +112,7 @@ pipeline {
                 anyOf {
                     branch 'develop'
                     branch 'main'
+                    branch 'demo/sonarqube-failure'
                 }
             }
             steps {
