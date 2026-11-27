@@ -60,7 +60,7 @@ pipeline {
                     def scannerHome = tool 'SonarScanner'
 
                     withSonarQubeEnv('TaskFlow-Sonar') {
-                        sh "${scannerHome}/bin/sonar-scanner"
+sh "${scannerHome}/bin/sonar-scanner -Dsonar.qualitygate.ignoreSmallChanges=false"
                     }
                 }
             }
