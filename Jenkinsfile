@@ -132,8 +132,9 @@ pipeline {
                                 fingerprint: true
             }
         }
-    post {
-        success { echo "Pipeline for ${env.BRANCH_NAME} completed successfully." }
-        failure { echo "Pipeline for ${env.BRANCH_NAME} failed. Check the stage that turned red." }
+        post {
+            success { echo "Pipeline for ${env.BRANCH_NAME} completed successfully." }
+            failure { echo "Pipeline for ${env.BRANCH_NAME} failed. Check the stage that turned red." }
+        }
     }
 }
