@@ -94,12 +94,13 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Build') {
             when {
                 anyOf {
                     branch 'develop'
                     branch 'main'
+                    branch 'demo/sonarqube-failure'
                 }
             }
             steps {
@@ -108,24 +109,29 @@ pipeline {
         }
 
         stage('Archive Artifact') {
-            when { branch 'main' }
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'demo/sonarqube-failure'
+                }
+            }
             steps {
-                // Production build output + Dockerfile only. No node_modules.
                 sh '''
                     rm -f taskflow-*.tar.gz
                     tar -czf "$ARTIFACT_NAME" dist Dockerfile
                     echo "Artifact contents:"
                     tar -tzf "$ARTIFACT_NAME"
+
                     if tar -tzf "$ARTIFACT_NAME" | grep -q node_modules; then
-                        echo "ERROR: node_modules found in artifact"; exit 1
+                        echo "ERROR: node_modules found in artifact"
+                        exit 1
                     fi
                 '''
+
                 archiveArtifacts artifacts: "${env.ARTIFACT_NAME}, audit-report.txt",
-                                 fingerprint: true
+                                fingerprint: true
             }
         }
-    }
-
     post {
         success { echo "Pipeline for ${env.BRANCH_NAME} completed successfully." }
         failure { echo "Pipeline for ${env.BRANCH_NAME} failed. Check the stage that turned red." }
