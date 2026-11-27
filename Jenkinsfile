@@ -1,13 +1,3 @@
-// CI pipeline for the Jenkins Multibranch Pipeline.
-//
-//  Stage               feature/*   develop   main
-//  Checkout               yes        yes      yes
-//  Install and Test       yes        yes      yes
-//  Coverage               yes        yes      yes
-//  SonarQube Analysis                         yes
-//  Quality Gate                               yes
-//  Build                             yes      yes
-//  Archive Artifact                           yes
 
 pipeline {
     agent any
@@ -23,11 +13,8 @@ pipeline {
     }
 
     environment {
-        // Must match the names configured in Manage Jenkins.
-        SONAR_SERVER       = 'SonarQube'      // Manage Jenkins > System > SonarQube servers
-        SONAR_SCANNER_TOOL = 'SonarScanner'   // Manage Jenkins > Tools > SonarQube Scanner
-        // Address of SonarQube as seen FROM the Jenkins container (same Docker network).
-        // Passed to the scanner explicitly, so a wrong URL in the Jenkins server entry cannot break it.
+        SONAR_SERVER       = 'TaskFlow-Sonar'
+        SONAR_SCANNER_TOOL = 'SonarScanner'
         SONAR_URL          = 'http://sonarqube:9000'
         ARTIFACT_NAME      = "taskflow-${env.BUILD_NUMBER}.tar.gz"
     }
@@ -37,7 +24,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
-                echo "Branch: ${env.BRANCH_NAME}  |  CI build: #${env.BUILD_NUMBER}"
+                echo "Branch: ${env.BRANCH_NAME} | CI build: #${env.BUILD_NUMBER}"
             }
         }
 
@@ -45,21 +32,18 @@ pipeline {
             steps {
                 sh 'node -v && npm -v'
                 sh 'npm ci'
-                // A failing test fails this stage and stops the pipeline.
                 sh 'npm test'
             }
         }
 
         stage('Coverage') {
             steps {
-                // Writes coverage/lcov.info; also fails below the 80% threshold.
                 sh 'npm run test:coverage'
             }
         }
 
         stage('Dependency Audit') {
             steps {
-                // Informational only: findings are reported, not blocking.
                 sh 'npm audit | tee audit-report.txt || true'
             }
         }
@@ -74,6 +58,7 @@ pipeline {
             steps {
                 script {
                     def scannerHome = tool 'SonarScanner'
+
                     withSonarQubeEnv('TaskFlow-Sonar') {
                         sh "${scannerHome}/bin/sonar-scanner"
                     }
@@ -118,7 +103,9 @@ pipeline {
             steps {
                 sh '''
                     rm -f taskflow-*.tar.gz
+
                     tar -czf "$ARTIFACT_NAME" dist Dockerfile
+
                     echo "Artifact contents:"
                     tar -tzf "$ARTIFACT_NAME"
 
@@ -129,19 +116,18 @@ pipeline {
                 '''
 
                 archiveArtifacts artifacts: "${env.ARTIFACT_NAME}, audit-report.txt",
-                                fingerprint: true
+                                 fingerprint: true
             }
         }
-        
-        post {
-            success 
-            {
-                echo "Pipeline for ${env.BRANCH_NAME} completed successfully."
-            }
+    }
 
-            failure {
-                echo "Pipeline for ${env.BRANCH_NAME} failed. Check the stage that turned red."
-            }
+    post {
+        success {
+            echo "Pipeline for ${env.BRANCH_NAME} completed successfully."
+        }
+
+        failure {
+            echo "Pipeline for ${env.BRANCH_NAME} failed. Check the stage that turned red."
         }
     }
 }
