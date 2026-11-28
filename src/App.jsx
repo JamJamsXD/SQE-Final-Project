@@ -3,6 +3,7 @@ import { useState } from 'react';
 import './App.css';
 
 function App() {
+  const unusedVariable = "This variable is never used";
   const [tasks, setTasks] = useState([
     { id: 1, title: 'Complete SQE Final Project', completed: false },
     { id: 2, title: 'Review React fundamentals', completed: true },
@@ -59,6 +60,12 @@ function App() {
     (task) => task.completed
   ).length;
 
+  const getCompletionPercentage = () => {
+  if (tasks.length === 0) return 0;
+
+  return Math.round((completedCount / tasks.length) * 100);
+};
+
   return (
     <div className="app">
       <header className="header">
@@ -89,6 +96,11 @@ function App() {
           <div className="stat-card">
             <span>Pending</span>
             <h2>{tasks.length - completedCount}</h2>
+          </div>
+
+          <div className="stat-card">
+            <span>Completion Rate</span>
+            <h2>{getCompletionPercentage()}%</h2>
           </div>
         </section>
 

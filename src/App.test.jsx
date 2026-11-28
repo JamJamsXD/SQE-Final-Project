@@ -7,10 +7,13 @@ const INPUT_PLACEHOLDER = 'What needs to be done?'
 
 // Reads the number shown on a statistics card such as "Total Tasks".
 function getStat(label) {
-  const card = Array.from(document.querySelectorAll('.stat-card')).find(
-    (el) => el.querySelector('span').textContent === label
-  )
-  return card.querySelector('h2').textContent
+  const labelElement = screen.getByText(label, {
+    selector: '.stat-card span'
+  });
+
+  const card = labelElement.closest('.stat-card');
+
+  return card.querySelector('h2').textContent.trim();
 }
 
 async function addTask(user, title) {
