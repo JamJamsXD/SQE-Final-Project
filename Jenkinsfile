@@ -14,10 +14,6 @@ pipeline {
 
     tools {
         nodejs 'NodeJS-24'
-        def scannerHome = tool name: 'SonarScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
-withSonarQubeEnv('TaskFlow-Sonar') {
-    sh "${scannerHome}/bin/sonar-scanner"
-}
     }
 
     options {
